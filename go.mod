@@ -1,12 +1,13 @@
 module github.com/komugi8/todo-tutorial
 
-go 1.22.4
+go 1.23
 
 require github.com/labstack/echo/v4 v4.13.2
 
 require filippo.io/edwards25519 v1.1.0 // indirect
 
 require (
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/labstack/gommon v0.4.2 // indirect
