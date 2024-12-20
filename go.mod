@@ -2,9 +2,18 @@ module github.com/komugi8/todo-tutorial
 
 go 1.23
 
-require github.com/labstack/echo/v4 v4.13.2
+require (
+	github.com/golang-migrate/migrate v3.5.4+incompatible
+	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/labstack/echo/v4 v4.13.2
+)
 
-require filippo.io/edwards25519 v1.1.0 // indirect
+require (
+	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+)
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1

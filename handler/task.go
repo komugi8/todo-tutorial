@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/komugi8/todo-tutorial/domain"
@@ -15,52 +15,57 @@ type Handler struct {
 }
 
 func (h *Handler) GetTasks(c echo.Context) error {
-	return c.JSON(http.StatusOK, &domain.Tasks)
+	tasks := []domain.Task{}
+	err := h.DB.Select(&tasks, "SELECT * FROM tasks")
+	if err != nil {
+		log.Printf("Failed to get tasks: %v", err)
+		return c.JSON(http.StatusInternalServerError, "Failed to get tasks")
+	}
+	return c.JSON(http.StatusOK, &tasks)
 }
 
 func (h *Handler) GetTask(c echo.Context) error {
 	id := c.Param("id")
-	for _, task := range domain.Tasks {
-		if id == strconv.Itoa(task.ID) {
-			return c.JSON(http.StatusOK, &task)
-		}
+	task := domain.Task{}
+	err := h.DB.Get(&task, "SELECT * FROM tasks WHERE id = ?", id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, "Task not found")
 	}
-	return c.JSON(http.StatusNotFound, "Task not found")
+	return c.JSON(http.StatusOK, &task)
 }
 
 func (h *Handler) CreateTask(c echo.Context) error {
-    var task domain.Task
+	task := domain.Task{}
     err := c.Bind(&task)
     if err != nil {
         return c.JSON(http.StatusBadRequest, "Invalid request")
     }
-    domain.Tasks = append(domain.Tasks, task)
-    return c.JSON(http.StatusCreated, &task)
+	_, err = h.DB.Exec("INSERT INTO tasks (title, completed) VALUES (?, ?)", task.Title, task.Completed)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "Failed to create task")
+	}
+	return c.JSON(http.StatusCreated, &task)
 }
 
 func (h *Handler) UpdateTask(c echo.Context) error {
     id := c.Param("id")
-    var task domain.Task
+    task := domain.Task{}
     err := c.Bind(&task)
     if err != nil {
         return c.JSON(http.StatusBadRequest, "Invalid request")
     }
-    for i, t := range domain.Tasks {
-        if id == strconv.Itoa(t.ID) {
-            domain.Tasks[i] = task
-            return c.JSON(http.StatusOK, &task)
-        }
-    }
-    return c.JSON(http.StatusNotFound, "Task not found")
+	_, err = h.DB.Exec("UPDATE tasks SET title = ?, completed = ? WHERE id = ?", task.Title, task.Completed, id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "Failed to update task")
+	}
+	return c.JSON(http.StatusOK, &task)
 }
 
 func (h *Handler) DeleteTask(c echo.Context) error {
     id := c.Param("id")
-    for i, task := range domain.Tasks {
-        if id == strconv.Itoa(task.ID) {
-            domain.Tasks = append(domain.Tasks[:i], domain.Tasks[i+1:]...)
-            return c.JSON(http.StatusOK, &task)
-        }
-    }
-    return c.JSON(http.StatusNotFound, "Task not found")
+	_, err := h.DB.Exec("DELETE FROM tasks WHERE id = ?", id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "Failed to delete task")
+	}
+	return c.NoContent(http.StatusNoContent)
 }

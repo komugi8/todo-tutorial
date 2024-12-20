@@ -12,9 +12,9 @@ type Config struct {
 	Port    string `env:"PORT" envDefault:"3030"`
 	DBHost  string `env:"DB_HOST" envDefault:"db"`
 DBPort  string `env:"DB_PORT" envDefault:"3306"`
-DBUser  string `env:"DB_USER " envDefault:"user"`
+DBUser  string `env:"DB_USER " envDefault:"root"`
 DBPass  string `env:"DB_PASSWORD" envDefault:"password"`
-DBNAME  string `env:"DB_DATABASE" envDefault:"todo"`
+DBNAME  string `env:"DB_DATABASE" envDefault:"db"`
 }
 
 func NewConfig() (*Config, error) {
@@ -28,6 +28,6 @@ func NewConfig() (*Config, error) {
 }
 
 func (c *Config) GetDB() (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBNAME)
-	return sqlx.Connect("mysql", dsn)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?multiStatements=true", c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBNAME)
+	return sqlx.Open("mysql", dsn)
 }

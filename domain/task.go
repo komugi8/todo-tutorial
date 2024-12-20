@@ -1,13 +1,9 @@
 package domain
 
 type Task struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-var Tasks = []Task{
-	{ID: 1, Name: "task1"},
-	{ID: 2, Name: "task2"},
-	{ID: 3, Name: "task3"},
-	{ID: 4, Name: "task4"},
+	ID   int    `json:"id" db:"id"`
+	Title string `json:"title" db:"title"`
+	Completed bool `json:"completed" db:"completed"`
+	CreatedAt string `json:"created_at" db:"created_at"`
+	UpdatedAt string `json:"updated_at" db:"updated_at"`
 }
