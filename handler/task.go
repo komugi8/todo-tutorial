@@ -1,71 +1,75 @@
 package handler
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/komugi8/todo-tutorial/domain"
+	"github.com/komugi8/todo-tutorial/domain/model"
+	"github.com/komugi8/todo-tutorial/usecase"
 	"github.com/labstack/echo/v4"
 )
 
-
-type Handler struct {
-    DB *sqlx.DB
+type TaskHandler interface {
+	GetTasks(c echo.Context) error
+	GetTask(c echo.Context) error
+	CreateTask(c echo.Context) error
+	UpdateTask(c echo.Context) error
+	DeleteTask(c echo.Context) error
 }
 
-func (h *Handler) GetTasks(c echo.Context) error {
-	tasks := []domain.Task{}
-	err := h.DB.Select(&tasks, "SELECT * FROM tasks")
-	if err != nil {
-		log.Printf("Failed to get tasks: %v", err)
-		return c.JSON(http.StatusInternalServerError, "Failed to get tasks")
+type taskHandler struct {
+	taskUsecase usecase.TaskUsecase
+}
+
+func NewTaskHandler(taskUsecase usecase.TaskUsecase) TaskHandler {
+	return &taskHandler{
+		taskUsecase: taskUsecase,
 	}
-	return c.JSON(http.StatusOK, &tasks)
 }
 
-func (h *Handler) GetTask(c echo.Context) error {
+func (h *taskHandler) GetTasks(c echo.Context) error {
+	tasks, err := h.taskUsecase.GetTasks()
+	if err != nil {
+		return c.JSON(500, err.Error())
+	}
+	return c.JSON(200, tasks)
+}
+
+func (h *taskHandler) GetTask(c echo.Context) error {
 	id := c.Param("id")
-	task := domain.Task{}
-	err := h.DB.Get(&task, "SELECT * FROM tasks WHERE id = ?", id)
+	task, err := h.taskUsecase.GetTask(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, "Task not found")
+		return c.JSON(500, err.Error())
 	}
-	return c.JSON(http.StatusOK, &task)
+	return c.JSON(200, task)
 }
 
-func (h *Handler) CreateTask(c echo.Context) error {
-	task := domain.Task{}
-    err := c.Bind(&task)
-    if err != nil {
-        return c.JSON(http.StatusBadRequest, "Invalid request")
-    }
-	_, err = h.DB.Exec("INSERT INTO tasks (title, completed) VALUES (?, ?)", task.Title, task.Completed)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "Failed to create task")
+func (h *taskHandler) CreateTask(c echo.Context) error {
+	task := new(model.Task)
+	if err := c.Bind(task); err != nil {
+		return c.JSON(400, err.Error())
 	}
-	return c.JSON(http.StatusCreated, &task)
+	createdTask, err := h.taskUsecase.CreateTask(*task)
+	if err != nil {
+		return c.JSON(500, err.Error())
+	}
+	return c.JSON(201, createdTask)
 }
 
-func (h *Handler) UpdateTask(c echo.Context) error {
-    id := c.Param("id")
-    task := domain.Task{}
-    err := c.Bind(&task)
-    if err != nil {
-        return c.JSON(http.StatusBadRequest, "Invalid request")
-    }
-	_, err = h.DB.Exec("UPDATE tasks SET title = ?, completed = ? WHERE id = ?", task.Title, task.Completed, id)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "Failed to update task")
+func (h *taskHandler) UpdateTask(c echo.Context) error {
+	task := new(model.Task)
+	if err := c.Bind(task); err != nil {
+		return c.JSON(400, err.Error())
 	}
-	return c.JSON(http.StatusOK, &task)
+	updatedTask, err := h.taskUsecase.UpdateTask(*task)
+	if err != nil {
+		return c.JSON(500, err.Error())
+	}
+	return c.JSON(200, updatedTask)
 }
 
-func (h *Handler) DeleteTask(c echo.Context) error {
-    id := c.Param("id")
-	_, err := h.DB.Exec("DELETE FROM tasks WHERE id = ?", id)
+func (h *taskHandler) DeleteTask(c echo.Context) error {
+	id := c.Param("id")
+	err := h.taskUsecase.DeleteTask(id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "Failed to delete task")
+		return c.JSON(500, err.Error())
 	}
-	return c.NoContent(http.StatusNoContent)
+	return c.NoContent(204)
 }
